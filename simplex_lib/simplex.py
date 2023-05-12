@@ -85,6 +85,8 @@ def beautiful_print_solution(A_matrix, B_index_ones, b_free_chlens, C_deal_free_
     print('\n ЗНАЧЕНИЕ ЦЕЛЕВОЙ ФУНКЦИИ ----↓ \n', '', -C_deal_free_chlen)
     print('\n\n')
 
+    return zero_vector, -C_deal_free_chlen
+
 
 def pivot(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen, leader_column, leader_line):
     """
@@ -114,9 +116,9 @@ def Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chle
             return None
         step_print(A_matrix, b_free_chlens, C_deal_func, C_deal_free_chlen, B_index_ones)
 
-    beautiful_print_solution(A_matrix, B_index_ones, b_free_chlens, C_deal_free_chlen, C_deal_func)
+    return beautiful_print_solution(A_matrix, B_index_ones, b_free_chlens, C_deal_free_chlen, C_deal_func)
 
-    return A_matrix, b_free_chlens, C_deal_func, C_deal_free_chlen
+    # return A_matrix, b_free_chlens, C_deal_func, C_deal_free_chlen
 
 
 def Simplex_With_Init(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen):
@@ -189,6 +191,22 @@ def Initialize_Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_dea
         else:
             print("\nСИМПЛЕКС. ЭТАП ИНИЦИАЛИЗАЦИИ. ЗАДАЧА НЕРАЗРЕШИМА!!!\n")
             return None
+
+
+def Recover_Initial_Variables(opt_solution_vector, X_any):
+    """
+    Предполагаем, что переменные любого знака - все в начале;
+    в конце только положиетльные переменные.
+    Здесь есть противоречие с тем, как мы приняли вводить данные (сначала вводились толькл + переменные)
+    Поэтому не использовать этот метод необдуманно! Либо изменить Make_Canon_Form!
+    """
+    initial_variables = []
+    for i in range(0, X_any, 2):
+        initial_variables.append(opt_solution_vector[i] - opt_solution_vector[i+1])
+        i += 2
+    return initial_variables
+
+
 
 
 if __name__ == '__main__':

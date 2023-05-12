@@ -1,6 +1,6 @@
 import numpy as np
 from simplex_lib.preprocessing import Make_Canon_Form, Update_C
-from simplex_lib.simplex import  Simplex_With_Init
+from simplex_lib.simplex import Simplex_With_Init, Recover_Initial_Variables
 
 
 class Target_function:
@@ -8,6 +8,7 @@ class Target_function:
         self.f = f_
         self.grad = grad_
         self.R = None
+        self.K = None
 
 
 class Constraint:
@@ -74,7 +75,7 @@ class Zoitendeik_step:
             matrix.append(line.copy())
             b.append(1.0)
 
-        # for i in self.I0:  # последние строчки - ограничения - равентсва
+        # for i in self.I0:  # последние строчки - линейные ограничения - равентсва
         #     line = self.phi_list[i].grad(self.x)
         #     line.append(-1)
         #     matrix.append(line.copy())
@@ -92,6 +93,7 @@ class Zoitendeik_step:
         Находим направление спуска
         """
         M, b, c, eq_less = self.make_matrix()
+        x_any = len(c)
         A2, b2, Ind2 = Make_Canon_Form(np.array(M).copy(),
                                        np.array(b),
                                        False,
@@ -99,11 +101,10 @@ class Zoitendeik_step:
                                        eq_less,
                                        0)
 
-        c2, c_free2 = Update_C(A2.copy(), b2.copy(), np.array(c).copy(), 0, Ind2, eq_less, 0, len(c))
+        c2, c_free2 = Update_C(A2.copy(), b2.copy(), np.array(c).copy(), 0, Ind2, eq_less, 0, x_any)
 
-        Simplex_With_Init(A2.copy(), b2.copy(), Ind2.copy(), c2.copy(), c_free2.copy())
-
-
+        opt_vector, self.eta = Simplex_With_Init(A2.copy(), b2.copy(), Ind2.copy(), c2.copy(), c_free2.copy())
+        self.s = Recover_Initial_Variables(opt_vector, x_any)
 
     def minimize(self):
         self.I_upd()
@@ -130,7 +131,7 @@ if __name__ == '__main__':
                       lambda x: -x[1],
                       lambda x: [0, -1])
 
-    z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0, 0.75], 0.5, 0.4)
+    z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.0001, 0.4)
 
     z.I_upd()
     z.make_matrix()
