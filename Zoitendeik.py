@@ -1,40 +1,58 @@
 import numpy as np
 from simplex_lib.preprocessing import Make_Canon_Form, Update_C
 from simplex_lib.simplex import Simplex_With_Init, Recover_Initial_Variables
+np.seterr(divide='ignore', invalid='ignore')
+
+
+def norma_calculate(v):
+    res = 0
+    for item in v:
+        res += item**2
+    return res**(1/2)
 
 
 class Target_function:
-    def __init__(self, f_, grad_):
+    def __init__(self, f_, grad_, R=10):
         self.f = f_
         self.grad = grad_
-        self.R = None
-        self.K = None
+        self.R = R  # предполагается, что потом надо изменить
 
 
 class Constraint:
-    def __init__(self, type_, phi_, grad_):
+    def __init__(self, type_, phi_, grad_, R=10, K=10):
         self.type = type_  # eq / ineq
         self.phi = phi_
         self.grad = grad_
-        self.R = None
-        self.K = None
+        self.R = R  # предполагается, что потом надо изменить
+        self.K = K
 
 
 class Zoitendeik_step:
-    def __init__(self, f_, phi_list, x0, delta0, lambda0):
+    def __init__(self, f_, phi_list, x0, delta0, alfa):
         self.f0 = f_
         self.phi_list = phi_list  # list of constraints
         self.x = x0
         self.dlt = delta0
-        self.lmd = lambda0
+        self.lmd = None  # step size
+        self.alfa = alfa  # параметр дробления (не шаг)
         self.eta = None
         self.s = []
         self.I0 = []
         self.I1 = []
         self.Id = []  # I_delta
 
+    def find_x0(self):
+        """
+        Находим self.x
+        Потом надо будет убрать из конструктора x0
+        """
+        pass
+
     def I_upd(self):
         i = 0  # здесь нумерация не с 1, как у Е.А., а с 0
+        self.I0 = []
+        self.I1 = []
+        self.Id = []
         for constraint in self.phi_list:
             phi_value = constraint.phi(self.x)
             phi_type = constraint.type
@@ -95,7 +113,7 @@ class Zoitendeik_step:
         M, b, c, eq_less = self.make_matrix()
         x_any = len(c)
         A2, b2, Ind2 = Make_Canon_Form(np.array(M).copy(),
-                                       np.array(b),
+                                       np.array(b).copy(),
                                        False,
                                        0,
                                        eq_less,
@@ -106,8 +124,50 @@ class Zoitendeik_step:
         opt_vector, self.eta = Simplex_With_Init(A2.copy(), b2.copy(), Ind2.copy(), c2.copy(), c_free2.copy())
         self.s = Recover_Initial_Variables(opt_vector, x_any)
 
+    def lmd_upd(self):
+        K = 0
+        R = 0
+        for i in range(len(self.phi_list)):
+            if (i not in self.Id) & (self.phi_list[i].K > K):
+                K = self.phi_list[i].K
+            elif (i in self.Id) & (self.phi_list[i].R > R):
+                R = self.phi_list[i].R
+
+        lmd_0 = -0.5 * self.eta / (self.f0.R * norma_calculate(self.s)**2)
+        lmd_d = -1 * self.eta / (R * norma_calculate(self.s)**2)
+        lmd_nd = self.dlt / (K * norma_calculate(self.s))
+
+        self.lmd = min(lmd_0, lmd_d, lmd_nd)
+
+    def x_upd(self):
+        if self.eta < -self.dlt:
+            self.x = [self.x[i] + self.lmd*self.s[i] for i in range(len(self.s))]
+        else:
+            self.dlt = self.alfa * self.dlt
+
     def minimize(self):
-        self.I_upd()
+        self.find_x0()
+        i = 0
+        print(self.x)
+        print(self.f0.f(self.x))
+        while True:  # поставить нормальное условие
+            self.I_upd()
+            self.s_upd()
+            self.lmd_upd()
+            self.x_upd()
+
+            print('way', self.s)
+            print('lmd', self.lmd)
+            print('dlt', self.dlt)
+            print('eta', self.eta)
+            print('I_d', self.Id)
+            print()
+            print('x', self.x)
+            print('f0', self.f0.f(self.x))
+
+            i += 1
+            if i == 70:
+                break
 
 
 if __name__ == '__main__':
@@ -131,11 +191,9 @@ if __name__ == '__main__':
                       lambda x: -x[1],
                       lambda x: [0, -1])
 
-    z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.0001, 0.4)
+    z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.25, 0.5)
 
-    z.I_upd()
-    z.make_matrix()
-    z.s_upd()
+    z.minimize()
 
     print('cat')
 

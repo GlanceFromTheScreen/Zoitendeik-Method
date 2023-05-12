@@ -77,13 +77,13 @@ def beautiful_print_solution(A_matrix, B_index_ones, b_free_chlens, C_deal_free_
     zero_vector = np.zeros(A_matrix.shape[1])
     for i in range(len(B_index_ones)):
         zero_vector[B_index_ones[i]] = b_free_chlens[i]
-    print('ОПТИМАЛЬНОЕ БАЗИСНОЕ РЕШЕНИЕ ----↓\n', zero_vector)
-    # print('\n МАРИЦА А ----↓ \n', A_matrix)
-    print('\n БАЗИСНЫЕ ИНДЕКСЫ ----↓ \n', B_index_ones)
-    print('\n СТОЛБЕЦ СВОБОДНЫХ ЧЛЕНОВ ----↓ \n', '', b_free_chlens)
-    print('\n ВЕКТОР С ----↓ \n', '', C_deal_func)
-    print('\n ЗНАЧЕНИЕ ЦЕЛЕВОЙ ФУНКЦИИ ----↓ \n', '', -C_deal_free_chlen)
-    print('\n\n')
+    # print('ОПТИМАЛЬНОЕ БАЗИСНОЕ РЕШЕНИЕ ----↓\n', zero_vector)
+    # # print('\n МАРИЦА А ----↓ \n', A_matrix)
+    # print('\n БАЗИСНЫЕ ИНДЕКСЫ ----↓ \n', B_index_ones)
+    # print('\n СТОЛБЕЦ СВОБОДНЫХ ЧЛЕНОВ ----↓ \n', '', b_free_chlens)
+    # print('\n ВЕКТОР С ----↓ \n', '', C_deal_func)
+    # print('\n ЗНАЧЕНИЕ ЦЕЛЕВОЙ ФУНКЦИИ ----↓ \n', '', -C_deal_free_chlen)
+    # print('\n\n')
 
     return zero_vector, -C_deal_free_chlen
 
@@ -106,7 +106,7 @@ def Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chle
     """
     Функция Simplex - см. Корман Simplex без инициализации
     """
-    while not all(x >= 0 for x in C_deal_func):
+    while not all(x >= -10**(-15) for x in C_deal_func):
         leader_column = min(range(len(C_deal_func)), key=C_deal_func.__getitem__)
         leader_line = create_list_for_leader_line(b_free_chlens, leader_column, B_index_ones, A_matrix)
         try:
@@ -114,7 +114,7 @@ def Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chle
                 pivot(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen, leader_column, leader_line)
         except:
             return None
-        step_print(A_matrix, b_free_chlens, C_deal_func, C_deal_free_chlen, B_index_ones)
+        # step_print(A_matrix, b_free_chlens, C_deal_func, C_deal_free_chlen, B_index_ones)
 
     return beautiful_print_solution(A_matrix, B_index_ones, b_free_chlens, C_deal_free_chlen, C_deal_func)
 
@@ -128,7 +128,7 @@ def Simplex_With_Init(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal
     try:
         A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen = \
             Initialize_Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen)
-        print('\n---СИМПЛЕКС - МЕТОД---\n')
+        # print('\n---СИМПЛЕКС - МЕТОД---\n')
         return Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_deal_free_chlen)
     except:
         return None
@@ -138,7 +138,7 @@ def Initialize_Simplex(A_matrix, b_free_chlens, B_index_ones, C_deal_func, C_dea
     """
     Функция Initialize_Simplex - см. note8 (не по Кормену)
     """
-    print('\n---ИНИЦИАЛИЗАЦИЯ СИМПЛЕКС-МЕТОДА. ПРОВЕРКА СУЩЕСТВОВАНИЯ РЕШЕНИЯ---\n')
+    # print('\n---ИНИЦИАЛИЗАЦИЯ СИМПЛЕКС-МЕТОДА. ПРОВЕРКА СУЩЕСТВОВАНИЯ РЕШЕНИЯ---\n')
     b_negative_index = list()
     for i in range(A_matrix.shape[0]):
         if b_free_chlens[i] < 0:
