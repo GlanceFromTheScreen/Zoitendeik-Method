@@ -1,6 +1,7 @@
 import numpy as np
 from simplex_lib.preprocessing import Make_Canon_Form, Update_C
 from simplex_lib.simplex import Simplex_With_Init, Recover_Initial_Variables
+from itertools import combinations
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -42,13 +43,6 @@ class Zoitendeik_step:
         self.I1 = []
         self.Id = []  # I_delta
         self.eq = []  # equations indexes among phi_list
-
-    def find_x0(self):
-        """
-        Находим self.x
-        Потом надо будет убрать из конструктора x0
-        """
-        pass
 
     def I_upd(self):
         i = 0  # здесь нумерация не с 1, как у Е.А., а с 0
@@ -98,18 +92,11 @@ class Zoitendeik_step:
             matrix.append(line.copy())
             b.append(1.0)
 
-        # for i in self.I0:  # последние строчки - линейные ограничения - равентсва
-        #     line = self.phi_list[i].grad(self.x)
-        #     line.append(-1)
-        #     matrix.append(line.copy())
-        #     b.append(0)
-
-        for i in self.eq:
+        for i in self.eq:  # последние строчки - линейные ограничения - равентсва
             line = self.phi_list[i].grad(self.x)
             line.append(0.0)
             matrix.append(line.copy())
             b.append(0)
-
 
         c = [0.0 for i in line0]
         c[-1] = 1.0
@@ -134,7 +121,7 @@ class Zoitendeik_step:
         c2, c_free2 = Update_C(A2.copy(), b2.copy(), np.array(c).copy(), 0, Ind2, eq_less, 0, x_any)
 
         opt_vector, self.eta = Simplex_With_Init(A2.copy(), b2.copy(), Ind2.copy(), c2.copy(), c_free2.copy())
-        self.s = Recover_Initial_Variables(opt_vector, x_any)
+        self.s = Recover_Initial_Variables(opt_vector, x_any - 1)
 
     def lmd_upd(self):
         K = 0
@@ -157,8 +144,69 @@ class Zoitendeik_step:
         else:
             self.dlt = self.alfa * self.dlt
 
+    def solve_matrix_by_linear_constraints(self):
+        matrix = []
+        b = []
+        x0 = [0.0 for i in self.x]
+
+        for i in self.eq:  # создаем матрицу по линейным ограничениям - равенствам
+            line = self.phi_list[i].grad(self.x)
+            matrix.append(line.copy())
+            b.append(-1 * self.phi_list[i].phi(x0))  # свободный член в линейном уравнении - это phi(0)
+
+        comb = list(combinations(range(len(x0)), len(self.eq)))  # варианты (индексы столбцов) квадратных матриц
+        for item in comb:  # пытаемся решить квадратную матрицу. Как только решили => stop
+            square_matrix = np.matrix(matrix)[:, list(item)]
+            try:
+                ans = np.linalg.solve(square_matrix, b)
+                for ind in item:
+                    x0[ind] = ans[ind]
+                break
+            except:
+                pass
+        return x0
+
+    def find_x0(self):
+        """
+        Находим начальное приближение self.x
+        Потом надо будет убрать из конструктора x0
+        1) Находим x0
+        2) Строим задачу по методу Зойтендейка
+        3) Решаем, пока значение целевой функции не станет < 0
+        """
+        x0 = self.solve_matrix_by_linear_constraints()
+        eta0 = max([self.phi_list[i].phi(x0) for i in self.Id + self.I1])
+
+        f = Target_function(lambda x: x[-1],
+                            lambda x: [0 if i != len(x) - 1 else 1 for i in range(len(x))])
+
+        p_list = []
+        for i in range(len(self.phi_list)):
+            type_ = self.phi_list[i].type
+            if type_ == 'eq':
+                p_list.append(0)
+                p_list[i] = Constraint(self.phi_list[i].type,
+                                       lambda y, i=i: self.phi_list[i].phi(y[:-1]),
+                                       lambda y, i=i: self.phi_list[i].grad(y[:-1]) + [0.0])  # имеется в виду конкатенация
+            else:
+                p_list.append(0)
+                p_list[i] = Constraint(self.phi_list[i].type,
+                                       lambda y, i=i: self.phi_list[i].phi(y[:-1]) - y[-1],
+                                       lambda y, i=i: self.phi_list[i].grad(y[:-1]) + [-1.0])  # имеется в виду конкатенация
+
+        super_task = Zoitendeik_step(f, p_list, x0 + [eta0], 0.25, 0.5)
+        while super_task.f0.f(super_task.x) >= 0:
+            ff = super_task.f0.f(super_task.x)
+            super_task.I_upd()
+            super_task.s_upd()
+            super_task.lmd_upd()
+            super_task.x_upd()
+
+        return super_task.x[:-1]
+
     def minimize(self):
-        self.find_x0()
+        self.I_upd()
+        self.x = self.find_x0()
         i = 0
         print(self.x)
         print(self.f0.f(self.x))
@@ -205,7 +253,7 @@ if __name__ == '__main__':
 
     z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.25, 0.5)
 
-    # z.minimize()
+    z.minimize()
 
     q0 = Target_function(lambda x: 6 * x[0] ** 2 + x[1] ** 2 - 2 * x[0] * x[1] - 10 * x[1],
                          lambda x: [12 * x[0] - 2 * x[1], 2 * x[1] - 2 * x[0] - 10],
@@ -217,8 +265,8 @@ if __name__ == '__main__':
                     K=2, R=2)
 
     q2 = Constraint('ineq',
-                    lambda x: -2 * x[0] - x[1] + 2,
-                    lambda x: [-2, -1],
+                    lambda x: -2 * x[0] - 2 * x[1] + 5,
+                    lambda x: [-2, -2],
                     K=2, R=2)
 
     q3 = Constraint('ineq',
@@ -233,6 +281,16 @@ if __name__ == '__main__':
 
     qq = Zoitendeik_step(q0, [q1, q2, q3, q4], [2.0, 0.0], 0.25, 0.5)
 
-    qq.minimize()
+    # qq.minimize()
+
+    # test_constr = q3 = Constraint('ineq',
+    #                               lambda x: -x[0],
+    #                               lambda x: [-1, 0],
+    #                               K=2, R=2)
+    # f = lambda y: test_constr.phi(y[:-1]) - y[-1]
+    # print(f([8, 2, 3]))
+
+    # qq.I_upd()
+    # print(qq.find_x0())
 
     print('cat')

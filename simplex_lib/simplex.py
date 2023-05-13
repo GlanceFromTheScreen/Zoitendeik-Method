@@ -201,7 +201,7 @@ def Recover_Initial_Variables(opt_solution_vector, X_any):
     Поэтому не использовать этот метод необдуманно! Либо изменить Make_Canon_Form!
     """
     initial_variables = []
-    for i in range(0, X_any, 2):
+    for i in range(0, 2 * X_any, 2):
         initial_variables.append(opt_solution_vector[i] - opt_solution_vector[i+1])
         i += 2
     return initial_variables
