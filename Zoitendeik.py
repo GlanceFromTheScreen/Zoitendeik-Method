@@ -196,7 +196,6 @@ class Zoitendeik_step:
 
         super_task = Zoitendeik_step(f, p_list, x0 + [eta0], 0.25, 0.5)
         while super_task.f0.f(super_task.x) >= 0:
-            ff = super_task.f0.f(super_task.x)
             super_task.I_upd()
             super_task.s_upd()
             super_task.lmd_upd()
@@ -208,8 +207,6 @@ class Zoitendeik_step:
         self.I_upd()
         self.x = self.find_x0()
         i = 0
-        print(self.x)
-        print(self.f0.f(self.x))
         while True:  # поставить нормальное условие
             print('N:', i)
             self.I_upd()
@@ -217,18 +214,20 @@ class Zoitendeik_step:
             self.lmd_upd()
             self.x_upd()
 
-            print('way', self.s)
-            print('lmd', self.lmd)
-            print('dlt', self.dlt)
-            print('eta', self.eta)
-            print('I_d', self.Id)
-            print()
-            print('x', self.x)
-            print('f0', self.f0.f(self.x))
-
+            self.print_params()
             i += 1
             if i == 70:
                 break
+
+    def print_params(self):
+        print('x', self.x)
+        print('f0', self.f0.f(self.x))
+        print('way', self.s)
+        print('lmd', self.lmd)
+        print('dlt', self.dlt)
+        print('eta', self.eta)
+        print('I_d', self.Id)
+        print()
 
 
 if __name__ == '__main__':
@@ -282,15 +281,5 @@ if __name__ == '__main__':
     qq = Zoitendeik_step(q0, [q1, q2, q3, q4], [2.0, 0.0], 0.25, 0.5)
 
     # qq.minimize()
-
-    # test_constr = q3 = Constraint('ineq',
-    #                               lambda x: -x[0],
-    #                               lambda x: [-1, 0],
-    #                               K=2, R=2)
-    # f = lambda y: test_constr.phi(y[:-1]) - y[-1]
-    # print(f([8, 2, 3]))
-
-    # qq.I_upd()
-    # print(qq.find_x0())
 
     print('cat')
