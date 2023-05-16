@@ -68,7 +68,8 @@ class Zoitendeik_step:
     def make_matrix(self):
         """
         Создаем матрицу ограничений и вектор свободных
-        членов для применения симплекс-метода в методе s_upd"""
+        членов для применения симплекс-метода в методе s_upd
+        (создаем задачу линейного программирования)"""
         matrix = []
         b = []
 
@@ -145,6 +146,9 @@ class Zoitendeik_step:
             self.dlt = self.alfa * self.dlt
 
     def solve_matrix_by_linear_constraints(self):
+        """
+        метод используется для построения начального приближения find_x0
+        """
         matrix = []
         b = []
         x0 = [0.0 for i in self.x]
@@ -171,11 +175,16 @@ class Zoitendeik_step:
         Находим начальное приближение self.x
         Потом надо будет убрать из конструктора x0
         1) Находим x0
-        2) Строим задачу по методу Зойтендейка
+        2) Строим задачу по методу Зойтендейка (создаем новые ограничения p_list на основе предыдущих + целевая ф-я)
         3) Решаем, пока значение целевой функции не станет < 0
         """
         x0 = self.solve_matrix_by_linear_constraints()
-        eta0 = max([self.phi_list[i].phi(x0) for i in self.Id + self.I1])
+        if len(self.phi_list) != 0:  # то есть хоть одно ограничение есть
+            eta0 = max([self.phi_list[i].phi(x0) for i in self.Id + self.I1])
+            if eta0 < 0:  # если все уже хорошо, то дальше можно не идти
+                return x0
+        else:  # безусловная минимизация
+            return x0
 
         f = Target_function(lambda x: x[-1],
                             lambda x: [0 if i != len(x) - 1 else 1 for i in range(len(x))])
@@ -206,6 +215,7 @@ class Zoitendeik_step:
     def minimize(self):
         self.I_upd()
         self.x = self.find_x0()
+        self.print_params()
         i = 0
         while True:  # поставить нормальное условие
             print('N:', i)
@@ -252,11 +262,11 @@ if __name__ == '__main__':
 
     z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.25, 0.5)
 
-    z.minimize()
+    # z.minimize()
 
     q0 = Target_function(lambda x: 6 * x[0] ** 2 + x[1] ** 2 - 2 * x[0] * x[1] - 10 * x[1],
                          lambda x: [12 * x[0] - 2 * x[1], 2 * x[1] - 2 * x[0] - 10],
-                         R=5)
+                         R=10)
 
     q1 = Constraint('eq',
                     lambda x: 2 * x[0] + 0.5 * x[1] - 4,
@@ -280,6 +290,6 @@ if __name__ == '__main__':
 
     qq = Zoitendeik_step(q0, [q1, q2, q3, q4], [2.0, 0.0], 0.25, 0.5)
 
-    # qq.minimize()
+    qq.minimize()
 
     print('cat')
