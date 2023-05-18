@@ -20,6 +20,10 @@ if __name__ == '__main__':
                       lambda x: x[0] ** 2 + x[2] ** 2 - 1,
                       lambda x: [2 * x[0], 0, 2 * x[2]])
 
+    phi2_border_constraint = Constraint('ineq',
+                                        lambda x: (x[0] - 1) ** 2 + (x[2] - 1) ** 2 - 1,
+                                        lambda x: [2 * (x[0] - 1), 0, 2 * (x[2] - 1)])
+
     phi3 = Constraint('ineq',
                       lambda x: x[1] ** 2 + x[2] ** 2 - 1,
                       lambda x: [0, 2 * x[1], 2 * x[2]])
@@ -28,6 +32,6 @@ if __name__ == '__main__':
                       lambda x: x[1] - (0.35426 / 0.121334) * x[0],
                       lambda x: [- (0.35426 / 0.121334), 1, 0])
 
-    z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.0, 0.0], 0.25, 0.5)
+    z = Zoitendeik_step(phi0, [phi1_border_constraint, phi2_border_constraint, phi3, phi4], [0.0, 0.0, 0.0], 0.5, 0.5)
 
     z.minimize()

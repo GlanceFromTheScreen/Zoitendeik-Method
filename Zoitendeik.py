@@ -212,21 +212,31 @@ class Zoitendeik_step:
 
         return super_task.x[:-1]
 
-    def minimize(self):
+    def minimize(self, eps=0.001):
         self.I_upd()
         self.x = self.find_x0()
         self.print_params()
         i = 0
         while True:  # поставить нормальное условие
             print('N:', i)
+
             self.I_upd()
             self.s_upd()
             self.lmd_upd()
+            self.print_params()
             self.x_upd()
 
-            self.print_params()
+            if self.eta == 0 and self.dlt < eps and self.dlt < -1 * max([self.phi_list[j].phi(self.x) for j in self.Id]):
+                print('THE END by ETA = 0')
+                break
+
+            if norma_calculate(self.f0.grad(self.x)) < eps:  # если решение - внутри области
+                print('THE END by GRAD F0')
+                print(norma_calculate(self.f0.grad(self.x)))
+                break
+
             i += 1
-            if i == 70:
+            if i == 100:  # условие на случай, если оптимум не заключен между двумя ограничениями
                 break
 
     def print_params(self):
@@ -262,7 +272,7 @@ if __name__ == '__main__':
 
     z = Zoitendeik_step(phi0, [phi1, phi2, phi3, phi4], [0.0, 0.75], 0.25, 0.5)
 
-    # z.minimize()
+    z.minimize()
 
     q0 = Target_function(lambda x: 6 * x[0] ** 2 + x[1] ** 2 - 2 * x[0] * x[1] - 10 * x[1],
                          lambda x: [12 * x[0] - 2 * x[1], 2 * x[1] - 2 * x[0] - 10],
@@ -288,8 +298,11 @@ if __name__ == '__main__':
                     lambda x: [0, -1],
                     K=2, R=2)
 
-    qq = Zoitendeik_step(q0, [q1, q2, q3, q4], [2.0, 0.0], 0.25, 0.5)
+    # здесь решение находится внутри области, поэтому
+    # eta никогда не равно нулю, а изменение dlt
+    # происходит просто благодаря приближению точки к оптимуму
+    qq = Zoitendeik_step(q0, [q1, q2, q3, q4], [2.0, 0.0], 0.5, 0.5)
 
-    qq.minimize()
+    # qq.minimize()
 
     print('cat')
