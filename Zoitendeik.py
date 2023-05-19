@@ -230,19 +230,21 @@ class Zoitendeik_step:
                 print('THE END by ETA = 0')
                 break
 
-            if norma_calculate(self.f0.grad(self.x)) < eps:  # если решение - внутри области
-                print('THE END by GRAD F0')
-                print(norma_calculate(self.f0.grad(self.x)))
+            if -self.eta < eps and self.dlt < eps:  # если решение - внутри области
+                print('THE END by POINT INSIDE SUSPECT')
                 break
 
             i += 1
-            if i == 100:  # условие на случай, если оптимум не заключен между двумя ограничениями
+            if i == 200:  # условие на случай, если оптимум не заключен между двумя ограничениями
+                print('THE END by i')
                 break
 
+        return self.f0.f(self.x)
+
     def print_params(self):
-        print('x', self.x)
-        print('f0', self.f0.f(self.x))
-        print('way', self.s)
+        print('x', [round(x_, 5) for x_ in self.x])
+        print('f0', round(self.f0.f(self.x), 5))
+        print('way', [round(w_, 5) for w_ in self.s])
         print('lmd', self.lmd)
         print('dlt', self.dlt)
         print('eta', self.eta)

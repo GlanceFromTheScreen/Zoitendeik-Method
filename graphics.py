@@ -1,6 +1,42 @@
+import matplotlib.pyplot as plt
 from Zoitendeik import *
 from math import sqrt
 from constants_evaluate import find_R, find_K
+
+
+def graph(ztd, f_star):
+    eps = 0.01
+    arr = []
+
+    ztd.I_upd()
+    ztd.x = ztd.find_x0()
+    i = 0
+    while True:  # поставить нормальное условие
+        ztd.I_upd()
+        ztd.s_upd()
+        ztd.lmd_upd()
+        ztd.x_upd()
+
+        arr.append(abs(ztd.f0.f(ztd.x) - f_star))
+
+        if ztd.eta == 0 and ztd.dlt < eps and ztd.dlt < -1 * max([ztd.phi_list[j].phi(ztd.x) for j in ztd.Id]):
+            break
+
+        if -ztd.eta < eps and ztd.dlt < eps:
+            break
+
+        i += 1
+        if i == 200:
+            break
+
+    print(arr)
+    plt.plot(range(len(arr)), arr, '-o')
+    plt.title('Решение на границе')
+    plt.xlabel('iteration')
+    plt.ylabel('|f(x_k) - f*|')
+    plt.semilogy()
+    plt.show()
+
 
 if __name__ == '__main__':
     #  [-0.12133422914447144, -0.3542620827004164, -0.18271647615185854] - absolute min
@@ -45,4 +81,6 @@ if __name__ == '__main__':
         ctr.K = k
         ctr.R = r
 
-    z.minimize(eps=0.01)
+    f_star = 4.522737127133121
+    graph(z, f_star)
+
