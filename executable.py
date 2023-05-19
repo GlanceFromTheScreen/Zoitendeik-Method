@@ -1,5 +1,6 @@
 from Zoitendeik import *
 from math import sqrt
+from constants_evaluate import find_R, find_K
 
 if __name__ == '__main__':
     #  [-0.12133422914447144, -0.3542620827004164, -0.18271647615185854] - absolute min
@@ -34,4 +35,14 @@ if __name__ == '__main__':
 
     z = Zoitendeik_step(phi0, [phi1_border_constraint, phi2_border_constraint, phi3, phi4], [0.0, 0.0, 0.0], 0.5, 0.5)
 
-    z.minimize()
+    k = find_K(z, [[0, 1], [0, 1], [0, 1]])
+    r = find_R([[0, 1], [0, 1], [0, 1]])
+    print('K: ', k)
+    print('R: ', r)
+
+    z.f0.R = r
+    for ctr in z.phi_list:
+        ctr.K = k
+        ctr.R = r
+
+    z.minimize(eps=0.0001)
